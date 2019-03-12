@@ -1,0 +1,91 @@
+#!/bin/bash
+
+#######################
+##                   ##
+##   VINAYKUMAR 1601 ##
+##                   ##
+#######################
+
+echo ""
+echo "******Enabling ssh password authentication ........!!"
+
+sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
+
+echo "Restaring sshd service....!!"
+
+service sshd restart
+
+echo ""
+
+
+echo "stoping firewalld service"
+
+/bin/systemctl stop firewald
+
+echo " ***checking status of firewalld"
+
+/bin/systemclt status firewalld
+sleep 3
+
+echo "*******checking selinux status ....................."
+getenforce
+
+setenforce 0
+
+sed -i 's/enforcing/disabled/g' /etc/selinux/config /etc/selinux/config
+
+sestatus
+
+#echo "Rebooting server .............................& changing selinux to Disabled"
+
+#reboot
+
+echo ""
+echo "**** Doing yum update *******************"
+
+yum update -y
+
+echo ""
+
+echo "********************Installing latest epel repository**************"
+yum install epel-release -y
+echo ""
+
+
+echo "*****Adding puppet package to repository *********"
+rpm -ivh http://yum.puppetlabs.com/puppet6/puppet-release-el-7.noarch.rpm
+echo ""
+
+sleep 3
+
+echo "**** Installing puppet agent version is 6.3.0 *****"
+yum install puppet -y
+echo ""
+
+sleep 2
+
+echo "================ Puppet configurations =============="
+sleep 2
+
+echo "server = mygcp-puppetserver.us-east1-b.c.testing-applications-172193.internal"  >> /etc/puppetlabs/puppet/puppet.conf
+
+echo "***Starting puppet agent serivce ***** "
+systemctl start puppet
+echo ""
+sleep 3
+
+echo "********creating and setting up facter role**************"
+mkdir -p /etc/facter/facts.d
+cd /etc/facter/facts.d/
+touch role.txt
+echo "role=omdserver" > role.txt
+sleep 3
+
+facter role
+
+
+echo "running first time puppetagent -t on client side"
+puppet agent -t
+sleep 5
+
+echo "SIGN CERT IN PUPPET MASTER"
